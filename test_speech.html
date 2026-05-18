@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Android ASR + TTS test</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 2rem; }
+    button { font-size: 1.2rem; padding: 0.8rem 1rem; }
+    #status { margin-top: 1rem; }
+    #heard { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>ASR + TTS echo test</h1>
+
+  <button id="btn">Tap, speak, echo</button>
+
+  <p id="status">Idle</p>
+  <p>Heard: <span id="heard">—</span></p>
+
+  <script>
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    const btn = document.getElementById("btn");
+    const statusEl = document.getElementById("status");
+    const heardEl = document.getElementById("heard");
+
+    function speak(text) {
+      speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "en-US";
+      utterance.rate = 1;
+      utterance.pitch = 1;
+
+      speechSynthesis.speak(utterance);
+    }
+
+    btn.onclick = () => {
+      if (!SpeechRecognition) {
+        statusEl.textContent = "Speech recognition not supported in this browser.";
+        return;
+      }
+
+      if (!("speechSynthesis" in window)) {
+        statusEl.textContent = "Speech synthesis not supported in this browser.";
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.interimResults = false;
+      recognition.continuous = false;
+      recognition.maxAlternatives = 1;
+
+      btn.disabled = true;
+      statusEl.textContent = "Listening…";
+      heardEl.textContent = "—";
+
+      recognition.onresult = event => {
+        const text = event.results[0][0].transcript;
+        heardEl.textContent = text;
+        statusEl.textContent = "Speaking…";
+        speak(`You said: ${text}`);
+      };
+
+      recognition.onerror = event => {
+        statusEl.textContent = `Error: ${event.error}`;
+      };
+
+      recognition.onend = () => {
+        btn.disabled = false;
+        if (statusEl.textContent === "Listening…") {
+          statusEl.textContent = "No speech detected.";
+        } else if (statusEl.textContent === "Speaking…") {
+          statusEl.textContent = "Done.";
+        }
+      };
+
+      recognition.start();
+    };
+  </script>
+</body>
+</html>
