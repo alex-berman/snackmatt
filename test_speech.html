@@ -18,8 +18,31 @@
 
   <p id="status">Idle</p>
   <p>Heard: <span id="heard">—</span></p>
+  <p id="error" style="color: red;"></p>
 
   <script>
+    const errorEl = document.getElementById("error");
+
+    function showError(msg) {
+      errorEl.textContent = msg;
+    }
+
+    function clearError() {
+      errorEl.textContent = "";
+    }
+
+    speechSynthesis.onvoiceschanged = () => {
+      const voices = speechSynthesis.getVoices();
+
+      statusEl.textContent =
+        `Loaded ${voices.length} TTS voices`;
+
+      // Optional: show all voices on screen
+      // showError(
+      //   voices.map(v => `${v.name} (${v.lang})`).join("\n")
+      // );
+    };
+
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -27,13 +50,29 @@
     const statusEl = document.getElementById("status");
     const heardEl = document.getElementById("heard");
 
+    function getSwedishVoice() {
+      const voices = speechSynthesis.getVoices();
+
+      return voices.find(v => v.lang === "sv-SE")
+          || voices.find(v => v.lang.startsWith("sv"))
+          || null;
+    }
+
     function speak(text) {
+      clearError();
       speechSynthesis.cancel();
 
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = "sv-SE";
-      utterance.rate = 1;
-      utterance.pitch = 1;
+
+      const voice = getSwedishVoice();
+      if (voice) {
+        utterance.voice = voice;
+      } else {
+        showError("No Swedish TTS voice found. Available voices:",
+          speechSynthesis.getVoices().map(v => `${v.name} ${v.lang}`)
+        );
+      }
 
       speechSynthesis.speak(utterance);
     }
@@ -63,11 +102,11 @@
         const text = event.results[0][0].transcript;
         heardEl.textContent = text;
         statusEl.textContent = "Speaking…";
-        speak(`You said: ${text}`);
+        speak(`Du sa: ${text}`);
       };
 
       recognition.onerror = event => {
-        statusEl.textContent = `Error: ${event.error}`;
+        showError(`TTS Error: ${event.error}`);
       };
 
       recognition.onend = () => {
