@@ -49,7 +49,7 @@ def _execute_and_respond(
         return False
 
     response["system_move_nlg"] = generate_move_utterance(
-        chess.Move.from_uci(system_uci)
+        chess.Move.from_uci(system_uci), board
     )
     return True
 

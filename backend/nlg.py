@@ -33,10 +33,28 @@ _PIECE_TYPE_TO_SWEDISH_DEFINITE: dict[int, str] = {
 }
 
 
-def generate_move_utterance(move: chess.Move) -> str:
-    """Speak a plain move as Swedish text (e.g. ``Jag flyttar E7 till E5.``)."""
+def generate_move_utterance(move: chess.Move, board: chess.Board | None = None) -> str:
+    """Speak a plain/capture move as Swedish text."""
     from_sq = chess.square_name(move.from_square).upper()
     to_sq = chess.square_name(move.to_square).upper()
+
+    if board is not None:
+        try:
+            board.pop()
+        except IndexError:
+            pass
+        else:
+            if board.is_capture(move):
+                attacker = board.piece_at(move.from_square)
+                victim = board.piece_at(move.to_square)
+                board.push(move)
+                if attacker is not None and victim is not None:
+                    an = _get_swedish_piece_name(attacker.piece_type, definite=False)
+                    vn = _get_swedish_piece_name(victim.piece_type, definite=False)
+                    return f"Jag tar din {vn} på {to_sq} med min {an} på {from_sq}."
+                return f"Jag flyttar {from_sq} till {to_sq}."
+            board.push(move)
+
     return f"Jag flyttar {from_sq} till {to_sq}."
 
 

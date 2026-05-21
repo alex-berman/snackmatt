@@ -30,6 +30,17 @@ move_as_capture:
     - U: ja
     - S: Jag flyttar E8 till E7.
 
+system_captures:
+  user: white
+  state:
+    fen: 4k3/4p3/8/3P4/8/8/8/4K3 w - - 0 1
+    turn: white
+  turns:
+    - U: d5 till d6
+    - S: Okej, bonden från D5 till D6, stämmer det?
+    - U: ja
+    - S: Jag tar din bonde på D6 med min bonde på E7.
+
 user_disconfirmation:
   user: white
   state:
