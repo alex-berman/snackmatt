@@ -1,0 +1,7 @@
+legal_moves:
+  user: white
+  state:
+    turn: white
+  turns:
+    - U: jag flyttar e2 till e4
+    - S: Jag flyttar E7 till E5.

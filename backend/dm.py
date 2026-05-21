@@ -65,7 +65,6 @@ def handle_turn(
         "type": "move",
         "user_move_uci": user_move.uci(),
         "system_move_uci": system_move.uci(),
-        # Placeholder until NLG converts move to natural language.
         "system_move_nlg": None,
     }
     return True
