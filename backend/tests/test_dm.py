@@ -11,9 +11,9 @@ BACKEND_ROOT = Path(__file__).resolve().parents[1]
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
-from dm import handle_turn  # noqa: E402
-
 chess = pytest.importorskip("chess")
+
+from dm import handle_turn  # noqa: E402
 
 
 def test_handle_turn_success_user_and_system_move() -> None:
@@ -39,18 +39,29 @@ def test_handle_turn_success_user_and_system_move() -> None:
     }
 
 
+def _board_with_two_pawns_to_e4() -> chess.Board:
+    """Two white pawns can reach e4 — ``to`` alone is ambiguous."""
+    board = chess.Board.empty()
+    board.set_piece_at(chess.E1, chess.Piece(chess.KING, chess.WHITE))
+    board.set_piece_at(chess.E8, chess.Piece(chess.KING, chess.BLACK))
+    board.set_piece_at(chess.D3, chess.Piece(chess.PAWN, chess.WHITE))
+    board.set_piece_at(chess.F3, chess.Piece(chess.PAWN, chess.WHITE))
+    board.turn = chess.WHITE
+    return board
+
+
 def test_handle_turn_invalid_or_ambiguous_user_move() -> None:
-    board = chess.Board()
+    board = _board_with_two_pawns_to_e4()
     interpretation = {
         "intent": "move_piece",
         "arguments": {"to": "e4"},
-    }  # Ambiguous in initial position.
+    }  # Ambiguous: d3-e4 and f3-e4 are both legal.
     context: dict = {}
 
     ok = handle_turn(interpretation, board, context)
 
     assert ok is False
-    assert board.fen() == chess.Board().fen()
+    assert board.fen() == _board_with_two_pawns_to_e4().fen()
     assert context["response"]["type"] == "error"
     assert context["response"]["reason"] == "invalid_or_ambiguous_user_move"
 
@@ -66,7 +77,8 @@ def test_handle_turn_none_interpretation() -> None:
 
 
 def test_handle_turn_no_legal_system_move() -> None:
-    board = chess.Board("7k/7Q/7K/8/8/8/8/8 b - - 0 1")
+    # White to move: Qh7-g7 checkmates; black then has no legal reply.
+    board = chess.Board("7k/7Q/7K/8/8/8/8/8 w - - 0 1")
     interpretation = {"intent": "move_piece", "arguments": {"from": "h7", "to": "g7"}}
     context: dict = {}
 
