@@ -121,7 +121,12 @@ def _run_interaction(name: str, spec: dict[str, Any]) -> None:
         assert normalize_text(actual_system) == normalize_text(expected_system), (
             f"{name}: expected system {expected_system!r}, got {actual_system!r}"
         )
-        if response.get("type") == "error":
+
+        if response.get("type") in ("confirmation", "info"):
+            assert board.fen() == fen_before, (
+                f"{name}: board must be unchanged after {expected_system!r}"
+            )
+        elif response.get("type") == "error":
             user_move_uci = response.get("user_move_uci")
             if user_move_uci:
                 expected_board = chess.Board(fen_before)

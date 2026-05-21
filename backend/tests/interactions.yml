@@ -4,6 +4,41 @@ legal_moves:
     turn: white
   turns:
     - U: jag flyttar e2 till e4
+    - S: Okej, bonden från E2 till E4, stämmer det?
+    - U: ja
+    - S: Jag flyttar E7 till E5.
+
+capture_confirmation:
+  user: white
+  state:
+    fen: 4k3/8/8/8/4b3/3P4/8/4K3 w - - 0 1
+    turn: white
+  turns:
+    - U: tar löparen på e4 med bonden på d3
+    - S: Okej, du tar min löpare på E4 med din bonde på D3, stämmer det?
+    - U: ja
+    - S: Jag flyttar E8 till E7.
+
+user_disconfirmation:
+  user: white
+  state:
+    turn: white
+  turns:
+    - U: jag flyttar e2 till e4
+    - S: Okej, bonden från E2 till E4, stämmer det?
+    - U: nej
+    - S: Okej
+
+user_restates_move:
+  user: white
+  state:
+    turn: white
+  turns:
+    - U: jag flyttar e2 till e3
+    - S: Okej, bonden från E2 till E3, stämmer det?
+    - U: jag flyttar e2 till e4
+    - S: Okej, bonden från E2 till E4, stämmer det?
+    - U: ja
     - S: Jag flyttar E7 till E5.
 
 ambiguous_user_move:
@@ -25,6 +60,8 @@ checkmate:
     fen: 7k/5R2/6K1/8/8/8/8/8 w - - 0 1
   turns:
     - U: från f7 till f8
+    - S: Okej, tornet från F7 till F8, stämmer det?
+    - U: ja
     - S: Det är schackmatt.
     - U: flytta till e4
       expect:
