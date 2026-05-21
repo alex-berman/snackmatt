@@ -8,11 +8,16 @@ import chess
 
 from nlu import resolve_move
 
+try:
+    from engine import get_move as _engine_get_move
+except ImportError:
+    _engine_get_move = None
+
 MoveSelector = Callable[[chess.Board], chess.Move | None]
 
 
 def _pick_first_legal_move(board: chess.Board) -> chess.Move | None:
-    """Baseline system policy until a stronger move generator is added."""
+    """Fallback move selector when the engine is unavailable."""
     for move in board.legal_moves:
         return move
     return None
@@ -56,7 +61,12 @@ def handle_turn(
         }
         return True
 
-    select_move = move_selector or _pick_first_legal_move
+    if move_selector is not None:
+        select_move = move_selector
+    elif _engine_get_move is not None:
+        select_move = lambda b: _engine_get_move(b) or _pick_first_legal_move(b)
+    else:
+        select_move = _pick_first_legal_move
     system_move = select_move(board)
 
     if system_move is None or not board.is_legal(system_move):

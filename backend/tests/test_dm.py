@@ -76,6 +76,39 @@ def test_handle_turn_none_interpretation() -> None:
     assert context["response"] == {"type": "error", "reason": "no_interpretation"}
 
 
+def _board_e4_d5() -> chess.Board:
+    board = chess.Board.empty()
+    board.set_piece_at(chess.E1, chess.Piece(chess.KING, chess.WHITE))
+    board.set_piece_at(chess.E8, chess.Piece(chess.KING, chess.BLACK))
+    board.set_piece_at(chess.E4, chess.Piece(chess.PAWN, chess.WHITE))
+    board.set_piece_at(chess.D5, chess.Piece(chess.PAWN, chess.BLACK))
+    board.turn = chess.WHITE
+    return board
+
+
+def test_handle_turn_user_move_is_capture_via_move_intent() -> None:
+    """A 'move_piece' intent to an occupied square resolves as a capture."""
+    board = _board_e4_d5()
+    interpretation = {
+        "intent": "move_piece",
+        "arguments": {"from": "e4", "to": "d5"},
+    }
+    context: dict = {}
+
+    def selector(current_board: chess.Board) -> chess.Move | None:
+        for move in current_board.legal_moves:
+            return move
+
+    ok = handle_turn(interpretation, board, context, move_selector=selector)
+
+    assert ok is True
+    assert context["response"]["type"] == "move"
+    assert context["response"]["user_move_uci"] == "e4d5"
+    assert board.piece_at(chess.D5) is not None
+    assert board.piece_at(chess.D5).color == chess.WHITE
+    assert board.piece_at(chess.E4) is None
+
+
 def test_handle_turn_checkmate_after_user_move() -> None:
     board = chess.Board("7k/5R2/6K1/8/8/8/8/8 w - - 0 1")
     interpretation = {"intent": "move_piece", "arguments": {"from": "f7", "to": "f8"}}

@@ -329,13 +329,19 @@ def resolve_move(board: chess.Board, parsed: dict[str, Any]) -> chess.Move | Non
 
     piece_type = _PIECE_TYPE.get(args.get("piece", ""))
     candidates: list[chess.Move] = []
+    target = board.piece_at(to_sq)
+    dest_has_opponent = target is not None and target.color != board.turn
     for move in board.legal_moves:
         if move.to_square != to_sq:
             continue
         if from_sq is not None and move.from_square != from_sq:
             continue
-        if board.is_capture(move):
-            continue
+        if dest_has_opponent:
+            if not board.is_capture(move):
+                continue
+        else:
+            if board.is_capture(move):
+                continue
         mover = board.piece_at(move.from_square)
         if mover is None or mover.color != board.turn:
             continue

@@ -19,6 +19,17 @@ capture_confirmation:
     - U: ja
     - S: Jag flyttar E8 till E7.
 
+move_as_capture:
+  user: white
+  state:
+    fen: 4k3/8/8/8/4b3/3P4/8/4K3 w - - 0 1
+    turn: white
+  turns:
+    - U: d3 till e4
+    - S: Okej, du tar min löpare på E4 med din bonde på D3, stämmer det?
+    - U: ja
+    - S: Jag flyttar E8 till E7.
+
 user_disconfirmation:
   user: white
   state:

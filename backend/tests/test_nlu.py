@@ -239,3 +239,42 @@ def test_resolve_move_dispatcher() -> None:
     move = resolve_move(board, parsed)
     assert move is not None
     assert move.uci() == "e2e4"
+
+
+def test_resolve_move_capture_when_opponent_on_target() -> None:
+    """'move_piece' intent to a square with an opponent piece yields a capture."""
+    board = chess.Board.empty()
+    board.set_piece_at(chess.E1, chess.Piece(chess.KING, chess.WHITE))
+    board.set_piece_at(chess.E8, chess.Piece(chess.KING, chess.BLACK))
+    board.set_piece_at(chess.E4, chess.Piece(chess.PAWN, chess.WHITE))
+    board.set_piece_at(chess.D5, chess.Piece(chess.PAWN, chess.BLACK))
+    board.turn = chess.WHITE
+
+    parsed: dict = {
+        "intent": "move_piece",
+        "arguments": {"from": "e4", "to": "d5"},
+    }
+    move = resolve_move(board, parsed)
+    assert move is not None
+    assert move.uci() == "e4d5"
+    assert board.is_legal(move)
+
+
+def test_resolve_move_rejects_capture_to_empty_square() -> None:
+    """'move_piece' to an empty square must not match a capture."""
+    board = chess.Board.empty()
+    board.set_piece_at(chess.E1, chess.Piece(chess.KING, chess.WHITE))
+    board.set_piece_at(chess.E8, chess.Piece(chess.KING, chess.BLACK))
+    board.set_piece_at(chess.E4, chess.Piece(chess.PAWN, chess.WHITE))
+    board.set_piece_at(chess.D5, chess.Piece(chess.PAWN, chess.BLACK))
+    board.turn = chess.WHITE
+
+    # Moving to an empty square — should resolve as a normal move
+    parsed: dict = {
+        "intent": "move_piece",
+        "arguments": {"from": "e4", "to": "e5"},
+    }
+    move = resolve_move(board, parsed)
+    assert move is not None
+    assert move.uci() == "e4e5"
+    assert not board.is_capture(move)

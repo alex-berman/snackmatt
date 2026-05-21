@@ -70,25 +70,26 @@ def generate_confirmation_prompt(
     from_sq = chess.square_name(resolved_move.from_square).upper()
     to_sq = chess.square_name(resolved_move.to_square).upper()
 
-    piece_type = None
     piece = board.piece_at(resolved_move.from_square)
-    if piece is not None:
-        piece_type = piece.piece_type
+    piece_type = piece.piece_type if piece is not None else None
 
-    if intent == "capture_piece":
-        args = interpretation.get("arguments", {})
-        victim_type_str = args.get("victim_piece", "")
-        attacker_type_str = args.get("piece", "")
+    is_capture = board.is_capture(resolved_move)
 
-        from nlu import _PIECE_TYPE
-        victim_type = _PIECE_TYPE.get(victim_type_str)
-        attacker_type = _PIECE_TYPE.get(attacker_type_str)
-
-        if victim_type is None and piece_type is not None:
-            captured = board.piece_at(resolved_move.to_square)
-            if captured is not None:
-                victim_type = captured.piece_type
-        if attacker_type is None:
+    if intent == "capture_piece" or is_capture:
+        if intent == "capture_piece":
+            args = interpretation.get("arguments", {})
+            from nlu import _PIECE_TYPE
+            victim_type = _PIECE_TYPE.get(args.get("victim_piece", ""))
+            attacker_type = _PIECE_TYPE.get(args.get("piece", ""))
+            if victim_type is None and piece_type is not None:
+                captured = board.piece_at(resolved_move.to_square)
+                if captured is not None:
+                    victim_type = captured.piece_type
+            if attacker_type is None:
+                attacker_type = piece_type
+        else:
+            victim = board.piece_at(resolved_move.to_square)
+            victim_type = victim.piece_type if victim is not None else None
             attacker_type = piece_type
 
         victim_name = _get_swedish_piece_name(victim_type, definite=False) if victim_type else ""
