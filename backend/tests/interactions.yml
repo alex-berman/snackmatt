@@ -5,3 +5,27 @@ legal_moves:
   turns:
     - U: jag flyttar e2 till e4
     - S: Jag flyttar E7 till E5.
+
+ambiguous_user_move:
+  state:
+    fen: 4k3/8/8/8/8/3P1P2/8/4K3 w - - 0 1
+  turns:
+    - U: flytta till e4
+    - S: Det verkar vara ett otillåtet drag.
+
+no_interpretation:
+  state:
+    turn: white
+  turns:
+    - U: hej hur mår du
+    - S: Jag förstår inte.
+
+checkmate:
+  state:
+    fen: 7k/5R2/6K1/8/8/8/8/8 w - - 0 1
+  turns:
+    - U: från f7 till f8
+    - S: Det är schackmatt.
+    - U: flytta till e4
+      expect:
+        no_turn: true

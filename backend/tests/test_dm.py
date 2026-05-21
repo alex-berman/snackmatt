@@ -76,14 +76,18 @@ def test_handle_turn_none_interpretation() -> None:
     assert context["response"] == {"type": "error", "reason": "no_interpretation"}
 
 
-def test_handle_turn_no_legal_system_move() -> None:
-    # White to move: Qh7-g7 checkmates; black then has no legal reply.
-    board = chess.Board("7k/7Q/7K/8/8/8/8/8 w - - 0 1")
-    interpretation = {"intent": "move_piece", "arguments": {"from": "h7", "to": "g7"}}
+def test_handle_turn_checkmate_after_user_move() -> None:
+    board = chess.Board("7k/5R2/6K1/8/8/8/8/8 w - - 0 1")
+    interpretation = {"intent": "move_piece", "arguments": {"from": "f7", "to": "f8"}}
     context: dict = {}
 
     ok = handle_turn(interpretation, board, context, move_selector=lambda _: None)
 
-    assert ok is False
-    assert context["response"]["type"] == "error"
-    assert context["response"]["reason"] == "no_legal_system_move"
+    assert ok is True
+    assert context["game_over"] is True
+    assert context["response"] == {
+        "type": "checkmate",
+        "user_move_uci": "f7f8",
+    }
+    assert board.is_checkmate()
+    assert board.peek().uci() == "f7f8"

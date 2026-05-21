@@ -48,6 +48,14 @@ def handle_turn(
 
     board.push(user_move)
 
+    if board.is_checkmate():
+        dialog_context["game_over"] = True
+        dialog_context["response"] = {
+            "type": "checkmate",
+            "user_move_uci": user_move.uci(),
+        }
+        return True
+
     select_move = move_selector or _pick_first_legal_move
     system_move = select_move(board)
 
@@ -60,6 +68,15 @@ def handle_turn(
         return False
 
     board.push(system_move)
+
+    if board.is_checkmate():
+        dialog_context["game_over"] = True
+        dialog_context["response"] = {
+            "type": "checkmate",
+            "user_move_uci": user_move.uci(),
+            "system_move_uci": system_move.uci(),
+        }
+        return True
 
     dialog_context["response"] = {
         "type": "move",

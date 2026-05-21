@@ -31,16 +31,17 @@ def _load_interactions() -> dict[str, Any]:
 
 
 def _board_from_state(state: dict[str, Any]) -> chess.Board:
-    board = chess.Board()
-    turn = state.get("turn", "white")
-    if turn == "black":
-        board.turn = chess.BLACK
+    if "fen" in state:
+        board = chess.Board(state["fen"])
     else:
-        board.turn = chess.WHITE
+        board = chess.Board()
+    if "turn" in state:
+        turn = state["turn"]
+        board.turn = chess.BLACK if turn == "black" else chess.WHITE
     return board
 
 
-def _parse_turn_line(line: str | dict[str, str]) -> tuple[str, str]:
+def _parse_turn_line(line: str | dict[str, Any]) -> tuple[str, str]:
     if isinstance(line, dict):
         if "U" in line:
             return "user", line["U"].strip()
@@ -52,6 +53,13 @@ def _parse_turn_line(line: str | dict[str, str]) -> tuple[str, str]:
     if line.startswith("S:"):
         return "system", line[2:].strip()
     raise ValueError(f"Turn line must start with U: or S:, got: {line!r}")
+
+
+def _expects_no_turn(entry: str | dict[str, Any]) -> bool:
+    if not isinstance(entry, dict):
+        return False
+    expect = entry.get("expect")
+    return isinstance(expect, dict) and expect.get("no_turn") is True
 
 
 def _move_selector_from_expected(expected_system: str):
@@ -67,29 +75,38 @@ def _move_selector_from_expected(expected_system: str):
     return select
 
 
-def _iter_turn_pairs(turns: list[str | dict[str, str]]) -> list[tuple[str, str]]:
-    pairs: list[tuple[str, str]] = []
-    i = 0
-    while i < len(turns):
-        role_u, utterance_u = _parse_turn_line(turns[i])
-        if role_u != "user":
-            raise ValueError(f"Expected user turn at index {i}, got {role_u}")
-        if i + 1 >= len(turns):
-            raise ValueError("User turn must be followed by a system turn")
-        role_s, utterance_s = _parse_turn_line(turns[i + 1])
-        if role_s != "system":
-            raise ValueError(f"Expected system turn at index {i + 1}, got {role_s}")
-        pairs.append((utterance_u, utterance_s))
-        i += 2
-    return pairs
-
-
 def _run_interaction(name: str, spec: dict[str, Any]) -> None:
     state = spec.get("state", {})
     board = _board_from_state(state)
     context: dict[str, Any] = {"user_color": spec.get("user", "white")}
 
-    for user_utterance, expected_system in _iter_turn_pairs(spec.get("turns", [])):
+    turns = spec.get("turns", [])
+    i = 0
+    while i < len(turns):
+        entry = turns[i]
+        if _expects_no_turn(entry):
+            _, user_utterance = _parse_turn_line(entry)
+            fen_before = board.fen()
+            ok = process_user_turn(user_utterance, board, context)
+            assert not ok, (
+                f"{name}: user must not get a turn after game over for {user_utterance!r}"
+            )
+            assert context.get("game_over"), f"{name}: game_over must be set"
+            assert context["response"].get("reason") == "game_over"
+            assert board.fen() == fen_before, (
+                f"{name}: board must be unchanged when turn is rejected"
+            )
+            i += 1
+            continue
+
+        role_u, user_utterance = _parse_turn_line(entry)
+        assert role_u == "user", f"{name}: expected user turn at index {i}"
+        if i + 1 >= len(turns):
+            raise ValueError(f"{name}: user turn must be followed by a system turn")
+        role_s, expected_system = _parse_turn_line(turns[i + 1])
+        assert role_s == "system", f"{name}: expected system turn at index {i + 1}"
+
+        fen_before = board.fen()
         ok = process_user_turn(
             user_utterance,
             board,
@@ -99,10 +116,26 @@ def _run_interaction(name: str, spec: dict[str, Any]) -> None:
         assert ok, (
             f"{name}: dialog failed for {user_utterance!r}: {context.get('response')}"
         )
-        actual_system = context["response"].get("system_move_nlg", "")
+        response = context["response"]
+        actual_system = response.get("system_move_nlg", "")
         assert normalize_text(actual_system) == normalize_text(expected_system), (
             f"{name}: expected system {expected_system!r}, got {actual_system!r}"
         )
+        if response.get("type") == "error":
+            user_move_uci = response.get("user_move_uci")
+            if user_move_uci:
+                expected_board = chess.Board(fen_before)
+                expected_board.push(chess.Move.from_uci(user_move_uci))
+                assert board.fen() == expected_board.fen(), (
+                    f"{name}: board must reflect user move {user_move_uci!r} only"
+                )
+            else:
+                assert board.fen() == fen_before, (
+                    f"{name}: board must be unchanged after {response.get('reason')}"
+                )
+        if response.get("type") == "checkmate":
+            assert context.get("game_over"), f"{name}: checkmate must end the game"
+        i += 2
 
 
 _INTERACTIONS = _load_interactions()
