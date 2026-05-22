@@ -55,7 +55,13 @@ def generate_move_utterance(move: chess.Move, board: chess.Board | None = None) 
                     vn = _get_swedish_piece_name(victim.piece_type, definite=False)
                     return f"Jag tar din {vn} på {to_sq} med min {an} på {from_sq}."
                 return f"Jag flyttar {from_sq} till {to_sq}."
+
+            piece = board.piece_at(move.from_square)
             board.push(move)
+            if piece is not None:
+                pn = _get_swedish_piece_name(piece.piece_type, definite=True)
+                return f"Jag flyttar {pn} från {from_sq} till {to_sq}."
+            return f"Jag flyttar {from_sq} till {to_sq}."
 
     return f"Jag flyttar {from_sq} till {to_sq}."
 
