@@ -82,6 +82,37 @@ no_interpretation:
     - U: hej hur mår du
     - S: Jag förstår inte.
 
+start_game_black:
+  started: false
+  state:
+    turn: white
+  turns:
+    - U: nytt parti
+    - S: Vill du vara vit eller svart eller ska vi lotta?
+    - U: svart
+    - S: Okej, du börjar som svart.
+    - S: Jag flyttar bonden från D2 till D4.
+    - U: jag flyttar d7 till d5
+    - S: Okej, bonden från D7 till D5, stämmer det?
+    - U: ja
+    - S: Okej, då ska vi se.
+    - S: Jag flyttar bonden från C2 till C4.
+
+start_game_white:
+  started: false
+  state:
+    turn: white
+  turns:
+    - U: jag vill spela
+    - S: Vill du vara vit eller svart eller ska vi lotta?
+    - U: vit
+    - S: Okej, du börjar som vit.
+    - U: jag flyttar e2 till e4
+    - S: Okej, bonden från E2 till E4, stämmer det?
+    - U: ja
+    - S: Okej, då ska vi se.
+    - S: Jag flyttar bonden från E7 till E5.
+
 checkmate:
   state:
     fen: 7k/5R2/6K1/8/8/8/8/8 w - - 0 1

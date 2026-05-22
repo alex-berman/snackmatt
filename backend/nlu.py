@@ -103,6 +103,11 @@ _AFFIRM = re.compile(r"\bja\b", re.IGNORECASE)
 
 _DENY = re.compile(r"\bnej\b", re.IGNORECASE)
 
+_START_GAME = re.compile(
+    r"\b(?:jag\s+vill\s+spela|nytt\s+parti|börja\s+om|borja\s+om)\b",
+    re.IGNORECASE,
+)
+
 _CAPTURE_VERB = re.compile(r"\b(?:slar|slå|sla|tar|ta)\b", re.IGNORECASE)
 
 _PIECE_TYPE: dict[str, chess.PieceType] = {
@@ -267,6 +272,9 @@ def parse_utterance(text: str) -> dict[str, Any] | None:
 
     if _DENY.search(normalized):
         return {"intent": "deny", "arguments": {}}
+
+    if _START_GAME.search(normalized):
+        return {"intent": "start_game", "arguments": {}}
 
     return None
 

@@ -173,7 +173,6 @@ def test_parse_utterance(utterance: str, expected: dict) -> None:
         "",
         "   ",
         "hej hur mår du",
-        "jag vill spela schack",
         "flytta bonden",
         "från z9",
     ],

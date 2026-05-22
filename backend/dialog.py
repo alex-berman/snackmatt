@@ -6,16 +6,18 @@ from typing import Any
 
 import chess
 
-from dm import MoveSelector, handle_turn
+from dm import MoveSelector, _pick_first_legal_move, handle_turn
 from nlg import (
+    COLOR_CHOICE_PROMPT,
     THINKING_UTTERANCE,
     generate_checkmate_utterance,
+    generate_color_confirmation,
     generate_confirmation_prompt,
     generate_error_utterance,
     generate_move_utterance,
     generate_rejection_ack,
 )
-from nlu import parse_utterance, resolve_move
+from nlu import normalize_text, parse_utterance, resolve_move
 
 
 def _execute_and_respond(
@@ -55,6 +57,21 @@ def _execute_and_respond(
     return True
 
 
+def _select_system_move(
+    board: chess.Board,
+    move_selector: MoveSelector | None = None,
+) -> chess.Move | None:
+    if move_selector is not None:
+        return move_selector(board)
+    try:
+        from engine import get_move as _engine_get_move
+    except ImportError:
+        _engine_get_move = None
+    if _engine_get_move is not None:
+        return _engine_get_move(board) or _pick_first_legal_move(board)
+    return _pick_first_legal_move(board)
+
+
 def process_user_turn(
     utterance: str,
     board: chess.Board,
@@ -71,7 +88,77 @@ def process_user_turn(
         dialog_context["response"] = {"type": "error", "reason": "game_over"}
         return False
 
+    if not dialog_context.get("game_started"):
+        if dialog_context.get("awaiting_color"):
+            normalized = normalize_text(utterance)
+            if normalized in ("vit", "svart"):
+                choice = normalized
+            elif normalized == "lotta":
+                import random
+                choice = random.choice(["vit", "svart"])
+            else:
+                dialog_context["response"] = {
+                    "type": "error",
+                    "reason": "no_interpretation",
+                }
+                dialog_context["response"]["system_move_nlg"] = generate_error_utterance(
+                    "no_interpretation"
+                )
+                return True
+
+            dialog_context["user_color"] = choice
+            dialog_context["game_started"] = True
+            dialog_context.pop("awaiting_color", None)
+            board.reset()
+            if choice == "svart":
+                dialog_context["keep_system_turn"] = True
+                dialog_context["_system_opening_move"] = True
+            dialog_context["response"] = {
+                "type": "info",
+                "system_move_nlg": generate_color_confirmation(choice),
+            }
+            return True
+
+        interpretation = parse_utterance(utterance)
+        if interpretation is not None and interpretation["intent"] == "start_game":
+            dialog_context["awaiting_color"] = True
+            dialog_context["response"] = {
+                "type": "color_choice",
+                "system_move_nlg": COLOR_CHOICE_PROMPT,
+            }
+            return True
+
+        dialog_context["response"] = {
+            "type": "error",
+            "reason": "no_interpretation",
+        }
+        dialog_context["response"]["system_move_nlg"] = generate_error_utterance(
+            "no_interpretation"
+        )
+        return True
+
     if not utterance:
+        if dialog_context.get("_system_opening_move"):
+            dialog_context.pop("_system_opening_move", None)
+            dialog_context.pop("keep_system_turn", None)
+            system_move = _select_system_move(board, move_selector)
+            if system_move is not None and board.is_legal(system_move):
+                board.push(system_move)
+                dialog_context["response"] = {
+                    "type": "move",
+                    "system_move_uci": system_move.uci(),
+                    "system_move_nlg": generate_move_utterance(system_move, board),
+                }
+                return True
+            dialog_context["response"] = {
+                "type": "error",
+                "reason": "no_legal_system_move",
+            }
+            dialog_context["response"]["system_move_nlg"] = generate_error_utterance(
+                "no_legal_system_move"
+            )
+            return True
+
         pending = dialog_context.get("pending_interpretation")
         if pending and dialog_context.get("keep_system_turn"):
             dialog_context.pop("keep_system_turn", None)

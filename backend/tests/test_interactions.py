@@ -88,7 +88,7 @@ def _check_response(
         f"{name}: expected {expected!r}, got {actual!r}"
     )
     rtype = response.get("type")
-    if rtype in ("confirmation", "info", "thinking"):
+    if rtype in ("confirmation", "info", "thinking", "color_choice"):
         assert board.fen() == fen_before, (
             f"{name}: board must be unchanged after {expected!r}"
         )
@@ -111,7 +111,9 @@ def _check_response(
 def _run_interaction(name: str, spec: dict[str, Any]) -> None:
     state = spec.get("state", {})
     board = _board_from_state(state)
-    context: dict[str, Any] = {"user_color": spec.get("user", "white")}
+    context: dict[str, Any] = {"game_started": spec.get("started", True)}
+    if context["game_started"]:
+        context["user_color"] = spec.get("user", "white")
 
     turns = spec.get("turns", [])
     i = 0

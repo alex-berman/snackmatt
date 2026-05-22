@@ -78,6 +78,13 @@ def generate_error_utterance(reason: str) -> str:
         raise ValueError(f"Unknown error reason for NLG: {reason!r}") from exc
 
 
+COLOR_CHOICE_PROMPT = "Vill du vara vit eller svart eller ska vi lotta?"
+
+
+def generate_color_confirmation(color: str) -> str:
+    return f"Okej, du börjar som {color}."
+
+
 def generate_rejection_ack() -> str:
     return "Okej"
 
