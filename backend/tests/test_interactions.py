@@ -75,6 +75,39 @@ def _move_selector_from_expected(expected_system: str):
     return select
 
 
+def _check_response(
+    name: str,
+    expected: str,
+    board: chess.Board,
+    fen_before: str,
+    context: dict[str, Any],
+) -> None:
+    response = context["response"]
+    actual = response.get("system_move_nlg", "")
+    assert normalize_text(actual) == normalize_text(expected), (
+        f"{name}: expected {expected!r}, got {actual!r}"
+    )
+    rtype = response.get("type")
+    if rtype in ("confirmation", "info", "thinking"):
+        assert board.fen() == fen_before, (
+            f"{name}: board must be unchanged after {expected!r}"
+        )
+    elif rtype == "error":
+        user_move_uci = response.get("user_move_uci")
+        if user_move_uci:
+            expected_board = chess.Board(fen_before)
+            expected_board.push(chess.Move.from_uci(user_move_uci))
+            assert board.fen() == expected_board.fen(), (
+                f"{name}: board must reflect user move {user_move_uci!r} only"
+            )
+        else:
+            assert board.fen() == fen_before, (
+                f"{name}: board must be unchanged after {response.get('reason')}"
+            )
+    if rtype == "checkmate":
+        assert context.get("game_over"), f"{name}: checkmate must end the game"
+
+
 def _run_interaction(name: str, spec: dict[str, Any]) -> None:
     state = spec.get("state", {})
     board = _board_from_state(state)
@@ -101,46 +134,43 @@ def _run_interaction(name: str, spec: dict[str, Any]) -> None:
 
         role_u, user_utterance = _parse_turn_line(entry)
         assert role_u == "user", f"{name}: expected user turn at index {i}"
-        if i + 1 >= len(turns):
-            raise ValueError(f"{name}: user turn must be followed by a system turn")
-        role_s, expected_system = _parse_turn_line(turns[i + 1])
-        assert role_s == "system", f"{name}: expected system turn at index {i + 1}"
+
+        sys_texts: list[str] = []
+        j = i + 1
+        while j < len(turns):
+            role, text = _parse_turn_line(turns[j])
+            if role != "system":
+                break
+            sys_texts.append(text)
+            j += 1
+        assert sys_texts, f"{name}: user turn must be followed by a system turn"
 
         fen_before = board.fen()
         ok = process_user_turn(
             user_utterance,
             board,
             context,
-            move_selector=_move_selector_from_expected(expected_system),
+            move_selector=_move_selector_from_expected(sys_texts[0]),
         )
         assert ok, (
             f"{name}: dialog failed for {user_utterance!r}: {context.get('response')}"
         )
-        response = context["response"]
-        actual_system = response.get("system_move_nlg", "")
-        assert normalize_text(actual_system) == normalize_text(expected_system), (
-            f"{name}: expected system {expected_system!r}, got {actual_system!r}"
-        )
+        _check_response(name, sys_texts[0], board, fen_before, context)
 
-        if response.get("type") in ("confirmation", "info"):
-            assert board.fen() == fen_before, (
-                f"{name}: board must be unchanged after {expected_system!r}"
+        for sys_text in sys_texts[1:]:
+            fen_before = board.fen()
+            ok = process_user_turn(
+                "",
+                board,
+                context,
+                move_selector=_move_selector_from_expected(sys_text),
             )
-        elif response.get("type") == "error":
-            user_move_uci = response.get("user_move_uci")
-            if user_move_uci:
-                expected_board = chess.Board(fen_before)
-                expected_board.push(chess.Move.from_uci(user_move_uci))
-                assert board.fen() == expected_board.fen(), (
-                    f"{name}: board must reflect user move {user_move_uci!r} only"
-                )
-            else:
-                assert board.fen() == fen_before, (
-                    f"{name}: board must be unchanged after {response.get('reason')}"
-                )
-        if response.get("type") == "checkmate":
-            assert context.get("game_over"), f"{name}: checkmate must end the game"
-        i += 2
+            assert ok, (
+                f"{name}: dialog continuation failed: {context.get('response')}"
+            )
+            _check_response(name, sys_text, board, fen_before, context)
+
+        i = j
 
 
 _INTERACTIONS = _load_interactions()

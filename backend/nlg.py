@@ -14,6 +14,8 @@ _ERROR_UTTERANCES: dict[str, str] = {
 
 CHECKMATE_UTTERANCE = "Det är schackmatt."
 
+THINKING_UTTERANCE = "Okej, då ska vi se."
+
 _PIECE_TYPE_TO_SWEDISH: dict[int, str] = {
     chess.PAWN: "bonde",
     chess.KNIGHT: "häst",

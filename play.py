@@ -46,6 +46,13 @@ def main() -> None:
         if system_text:
             print(f"\nSystem: {system_text}")
 
+        if context.get("thinking_said"):
+            process_user_turn("", board, context)
+            response = context.get("response", {})
+            system_text = response.get("system_move_nlg", "")
+            if system_text:
+                print(f"System: {system_text}")
+
         if response.get("type") == "checkmate":
             winner = "Svart" if board.turn == chess.WHITE else "Vit"
             print(f"\n*** SCHACKMATT! {winner} vann! ***")

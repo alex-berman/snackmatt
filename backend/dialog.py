@@ -8,6 +8,7 @@ import chess
 
 from dm import MoveSelector, handle_turn
 from nlg import (
+    THINKING_UTTERANCE,
     generate_checkmate_utterance,
     generate_confirmation_prompt,
     generate_error_utterance,
@@ -70,6 +71,21 @@ def process_user_turn(
         dialog_context["response"] = {"type": "error", "reason": "game_over"}
         return False
 
+    if not utterance:
+        pending = dialog_context.get("pending_interpretation")
+        if pending and dialog_context.get("thinking_said"):
+            dialog_context.pop("thinking_said", None)
+            dialog_context.pop("pending_interpretation", None)
+            return _execute_and_respond(pending, board, dialog_context, move_selector)
+        dialog_context["response"] = {
+            "type": "error",
+            "reason": "no_interpretation",
+        }
+        dialog_context["response"]["system_move_nlg"] = generate_error_utterance(
+            "no_interpretation"
+        )
+        return True
+
     interpretation = parse_utterance(utterance)
 
     if interpretation is not None and interpretation["intent"] == "affirm":
@@ -82,6 +98,13 @@ def process_user_turn(
             dialog_context["response"]["system_move_nlg"] = generate_error_utterance(
                 "no_interpretation"
             )
+            return True
+        if not dialog_context.get("thinking_said"):
+            dialog_context["thinking_said"] = True
+            dialog_context["response"] = {
+                "type": "thinking",
+                "system_move_nlg": THINKING_UTTERANCE,
+            }
             return True
         dialog_context.pop("pending_interpretation", None)
         return _execute_and_respond(pending, board, dialog_context, move_selector)

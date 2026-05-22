@@ -6,6 +6,7 @@ legal_moves:
     - U: jag flyttar e2 till e4
     - S: Okej, bonden från E2 till E4, stämmer det?
     - U: ja
+    - S: Okej, då ska vi se.
     - S: Jag flyttar E7 till E5.
 
 capture_confirmation:
@@ -17,6 +18,7 @@ capture_confirmation:
     - U: tar löparen på e4 med bonden på d3
     - S: Okej, du tar min löpare på E4 med din bonde på D3, stämmer det?
     - U: ja
+    - S: Okej, då ska vi se.
     - S: Jag flyttar E8 till E7.
 
 move_as_capture:
@@ -28,6 +30,7 @@ move_as_capture:
     - U: d3 till e4
     - S: Okej, du tar min löpare på E4 med din bonde på D3, stämmer det?
     - U: ja
+    - S: Okej, då ska vi se.
     - S: Jag flyttar E8 till E7.
 
 system_captures:
@@ -39,6 +42,7 @@ system_captures:
     - U: d5 till d6
     - S: Okej, bonden från D5 till D6, stämmer det?
     - U: ja
+    - S: Okej, då ska vi se.
     - S: Jag tar din bonde på D6 med min bonde på E7.
 
 user_disconfirmation:
@@ -61,6 +65,7 @@ user_restates_move:
     - U: jag flyttar e2 till e4
     - S: Okej, bonden från E2 till E4, stämmer det?
     - U: ja
+    - S: Okej, då ska vi se.
     - S: Jag flyttar E7 till E5.
 
 ambiguous_user_move:
@@ -84,6 +89,7 @@ checkmate:
     - U: från f7 till f8
     - S: Okej, tornet från F7 till F8, stämmer det?
     - U: ja
+    - S: Okej, då ska vi se.
     - S: Det är schackmatt.
     - U: flytta till e4
       expect:
