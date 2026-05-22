@@ -8,7 +8,8 @@ import chess
 
 _ERROR_UTTERANCES: dict[str, str] = {
     "no_interpretation": "Jag förstår inte.",
-    "invalid_or_ambiguous_user_move": "Det verkar vara ett otillåtet drag.",
+    "invalid_user_move": "Det är inte ett tillåtet drag.",
+    "ambiguous_user_move": "Jag förstår inte vilken pjäs du menar.",
     "no_legal_system_move": "Jag har inget lagligt drag.",
 }
 

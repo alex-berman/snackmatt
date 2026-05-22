@@ -70,10 +70,17 @@ user_restates_move:
 
 ambiguous_user_move:
   state:
-    fen: 4k3/8/8/8/8/3P1P2/8/4K3 w - - 0 1
+    fen: 4k3/8/8/8/8/2N5/5N2/4K3 w - - 0 1
   turns:
     - U: flytta till e4
-    - S: Det verkar vara ett otillåtet drag.
+    - S: Jag förstår inte vilken pjäs du menar.
+
+illegal_user_move:
+  state:
+    turn: white
+  turns:
+    - U: e5
+    - S: Det är inte ett tillåtet drag.
 
 no_interpretation:
   state:
@@ -81,6 +88,17 @@ no_interpretation:
   turns:
     - U: hej hur mår du
     - S: Jag förstår inte.
+
+bare_square_move:
+  user: white
+  state:
+    turn: white
+  turns:
+    - U: e4
+    - S: Okej, bonden från E2 till E4, stämmer det?
+    - U: ja
+    - S: Okej, då ska vi se.
+    - S: Jag flyttar bonden från E7 till E5.
 
 start_game_black:
   started: false
@@ -125,3 +143,39 @@ checkmate:
     - U: flytta till e4
       expect:
         no_turn: true
+
+restart_during_game:
+  user: white
+  state:
+    turn: white
+  turns:
+    - U: e4
+    - S: Okej, bonden från E2 till E4, stämmer det?
+    - U: ja
+    - S: Okej, då ska vi se.
+    - S: Jag flyttar bonden från E7 till E5.
+    - U: nytt parti
+    - S: Vill du vara vit eller svart eller ska vi lotta?
+    - U: vit
+    - S: Okej, du börjar som vit.
+    - U: d4
+    - S: Okej, bonden från D2 till D4, stämmer det?
+    - U: ja
+    - S: Okej, då ska vi se.
+    - S: Jag flyttar bonden från D7 till D5.
+
+restart_after_checkmate:
+  state:
+    fen: 7k/5R2/6K1/8/8/8/8/8 w - - 0 1
+  turns:
+    - U: från f7 till f8
+    - S: Okej, tornet från F7 till F8, stämmer det?
+    - U: ja
+    - S: Okej, då ska vi se.
+    - S: Det är schackmatt.
+    - U: nytt parti
+    - S: Vill du vara vit eller svart eller ska vi lotta?
+    - U: vit
+    - S: Okej, du börjar som vit.
+    - U: e4
+    - S: Okej, bonden från E2 till E4, stämmer det?

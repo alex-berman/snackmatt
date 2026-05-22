@@ -84,6 +84,11 @@ _MOVE_TO_ONLY = re.compile(
     re.IGNORECASE,
 )
 
+_BARE_SQUARE = re.compile(
+    rf"\b{_square_pattern('to')}\b",
+    re.IGNORECASE,
+)
+
 _CASTLE = re.compile(
     r"\b(?:rockera|rochera)\s+(?P<side>kort|långt?|langt?|kungs|dam)\b",
     re.IGNORECASE,
@@ -241,6 +246,16 @@ def parse_utterance(text: str) -> dict[str, Any] | None:
                 return _move_intent(from_sq, to_sq, normalized)
 
     m = _MOVE_TO_ONLY.search(normalized)
+    if m:
+        to_sq = parse_square_token(m, "to")
+        if to_sq:
+            args: dict[str, Any] = {"to": to_sq}
+            piece = _optional_piece(normalized)
+            if piece:
+                args["piece"] = piece
+            return {"intent": "move_piece", "arguments": args}
+
+    m = _BARE_SQUARE.search(normalized)
     if m:
         to_sq = parse_square_token(m, "to")
         if to_sq:
