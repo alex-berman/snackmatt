@@ -104,6 +104,11 @@ _DRAW = re.compile(
     re.IGNORECASE,
 )
 
+_REPEAT = re.compile(
+    r"\b(?:vad\s+sa\s+du|upprepa|repetera)\b",
+    re.IGNORECASE,
+)
+
 _AFFIRM = re.compile(r"\bja\b", re.IGNORECASE)
 
 _DENY = re.compile(r"\bnej\b", re.IGNORECASE)
@@ -281,6 +286,9 @@ def parse_utterance(text: str) -> dict[str, Any] | None:
 
     if _DRAW.search(normalized):
         return {"intent": "offer_draw", "arguments": {}}
+
+    if _REPEAT.search(normalized):
+        return {"intent": "repeat", "arguments": {}}
 
     if _AFFIRM.search(normalized):
         return {"intent": "affirm", "arguments": {}}

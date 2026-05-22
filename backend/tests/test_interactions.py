@@ -88,7 +88,7 @@ def _check_response(
         f"{name}: expected {expected!r}, got {actual!r}"
     )
     rtype = response.get("type")
-    if rtype in ("confirmation", "info", "thinking", "color_choice"):
+    if rtype in ("confirmation", "info", "thinking"):
         assert board.fen() == fen_before, (
             f"{name}: board must be unchanged after {expected!r}"
         )

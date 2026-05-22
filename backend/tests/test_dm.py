@@ -39,19 +39,19 @@ def test_handle_turn_success_user_and_system_move() -> None:
     }
 
 
-def _board_with_two_pawns_to_e4() -> chess.Board:
-    """Two white pawns can reach e4 — ``to`` alone is ambiguous."""
+def _board_with_two_knights_to_e4() -> chess.Board:
+    """Two knights (c3, f2) can reach e4 — ``to`` alone is ambiguous."""
     board = chess.Board.empty()
     board.set_piece_at(chess.E1, chess.Piece(chess.KING, chess.WHITE))
     board.set_piece_at(chess.E8, chess.Piece(chess.KING, chess.BLACK))
-    board.set_piece_at(chess.D3, chess.Piece(chess.PAWN, chess.WHITE))
-    board.set_piece_at(chess.F3, chess.Piece(chess.PAWN, chess.WHITE))
+    board.set_piece_at(chess.C3, chess.Piece(chess.KNIGHT, chess.WHITE))
+    board.set_piece_at(chess.F2, chess.Piece(chess.KNIGHT, chess.WHITE))
     board.turn = chess.WHITE
     return board
 
 
-def test_handle_turn_invalid_or_ambiguous_user_move() -> None:
-    board = _board_with_two_pawns_to_e4()
+def test_handle_turn_ambiguous_user_move() -> None:
+    board = _board_with_two_knights_to_e4()
     interpretation = {
         "intent": "move_piece",
         "arguments": {"to": "e4"},
@@ -61,9 +61,24 @@ def test_handle_turn_invalid_or_ambiguous_user_move() -> None:
     ok = handle_turn(interpretation, board, context)
 
     assert ok is False
-    assert board.fen() == _board_with_two_pawns_to_e4().fen()
+    assert board.fen() == _board_with_two_knights_to_e4().fen()
     assert context["response"]["type"] == "error"
-    assert context["response"]["reason"] == "invalid_or_ambiguous_user_move"
+    assert context["response"]["reason"] == "ambiguous_user_move"
+
+
+def test_handle_turn_invalid_user_move_no_legal_move() -> None:
+    board = chess.Board()
+    interpretation = {
+        "intent": "move_piece",
+        "arguments": {"to": "e5"},
+    }
+    context: dict = {}
+
+    ok = handle_turn(interpretation, board, context)
+
+    assert ok is False
+    assert context["response"]["type"] == "error"
+    assert context["response"]["reason"] == "invalid_user_move"
 
 
 def test_handle_turn_none_interpretation() -> None:

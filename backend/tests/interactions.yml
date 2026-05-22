@@ -164,6 +164,21 @@ restart_during_game:
     - S: Okej, då ska vi se.
     - S: Jag flyttar bonden från D7 till D5.
 
+repeat_last_utterance:
+  user: white
+  state:
+    turn: white
+  turns:
+    - U: e4
+    - S: Okej, bonden från E2 till E4, stämmer det?
+    - U: upprepa
+    - S: Okej, bonden från E2 till E4, stämmer det?
+    - U: ja
+    - S: Okej, då ska vi se.
+    - S: Jag flyttar bonden från D7 till D5.
+    - U: vad sa du
+    - S: Jag flyttar bonden från D7 till D5.
+
 restart_after_checkmate:
   state:
     fen: 7k/5R2/6K1/8/8/8/8/8 w - - 0 1

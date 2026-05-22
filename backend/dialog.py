@@ -32,12 +32,14 @@ def _execute_and_respond(
 
     if ok and response.get("type") == "checkmate":
         response["system_move_nlg"] = generate_checkmate_utterance()
+        dialog_context["last_system_move_nlg"] = response["system_move_nlg"]
         return True
 
     if not ok and response.get("type") == "error":
         reason = response.get("reason")
         if isinstance(reason, str):
             response["system_move_nlg"] = generate_error_utterance(reason)
+            dialog_context["last_system_move_nlg"] = response["system_move_nlg"]
             return True
         return False
 
@@ -54,7 +56,26 @@ def _execute_and_respond(
     response["system_move_nlg"] = generate_move_utterance(
         chess.Move.from_uci(system_uci), board
     )
+    dialog_context["last_system_move_nlg"] = response["system_move_nlg"]
     return True
+
+
+def _resolve_error_reason(
+    board: chess.Board,
+    interpretation: dict[str, Any],
+    user_move: chess.Move | None,
+) -> str:
+    if user_move is not None:
+        return "invalid_user_move"
+    args = interpretation.get("arguments", {})
+    to_sq_str = args.get("to")
+    from_sq_str = args.get("from")
+    if to_sq_str and not from_sq_str:
+        to_sq = chess.parse_square(to_sq_str)
+        matches = sum(1 for m in board.legal_moves if m.to_square == to_sq)
+        if matches > 1:
+            return "ambiguous_user_move"
+    return "invalid_user_move"
 
 
 def _select_system_move(
@@ -85,6 +106,17 @@ def process_user_turn(
     Returns ``False`` when the game is over and no further user turns are accepted.
     """
     if dialog_context.get("game_over"):
+        interpretation = parse_utterance(utterance)
+        if interpretation is not None and interpretation["intent"] == "start_game":
+            board.reset()
+            dialog_context.clear()
+            dialog_context["awaiting_color"] = True
+            dialog_context["response"] = {
+                "type": "color_choice",
+                "system_move_nlg": COLOR_CHOICE_PROMPT,
+            }
+            dialog_context["last_system_move_nlg"] = dialog_context["response"]["system_move_nlg"]
+            return True
         dialog_context["response"] = {"type": "error", "reason": "game_over"}
         return False
 
@@ -104,6 +136,7 @@ def process_user_turn(
                 dialog_context["response"]["system_move_nlg"] = generate_error_utterance(
                     "no_interpretation"
                 )
+                dialog_context["last_system_move_nlg"] = dialog_context["response"]["system_move_nlg"]
                 return True
 
             dialog_context["user_color"] = choice
@@ -117,6 +150,7 @@ def process_user_turn(
                 "type": "info",
                 "system_move_nlg": generate_color_confirmation(choice),
             }
+            dialog_context["last_system_move_nlg"] = dialog_context["response"]["system_move_nlg"]
             return True
 
         interpretation = parse_utterance(utterance)
@@ -126,6 +160,7 @@ def process_user_turn(
                 "type": "color_choice",
                 "system_move_nlg": COLOR_CHOICE_PROMPT,
             }
+            dialog_context["last_system_move_nlg"] = dialog_context["response"]["system_move_nlg"]
             return True
 
         dialog_context["response"] = {
@@ -135,6 +170,7 @@ def process_user_turn(
         dialog_context["response"]["system_move_nlg"] = generate_error_utterance(
             "no_interpretation"
         )
+        dialog_context["last_system_move_nlg"] = dialog_context["response"]["system_move_nlg"]
         return True
 
     if not utterance:
@@ -149,6 +185,7 @@ def process_user_turn(
                     "system_move_uci": system_move.uci(),
                     "system_move_nlg": generate_move_utterance(system_move, board),
                 }
+                dialog_context["last_system_move_nlg"] = dialog_context["response"]["system_move_nlg"]
                 return True
             dialog_context["response"] = {
                 "type": "error",
@@ -157,6 +194,7 @@ def process_user_turn(
             dialog_context["response"]["system_move_nlg"] = generate_error_utterance(
                 "no_legal_system_move"
             )
+            dialog_context["last_system_move_nlg"] = dialog_context["response"]["system_move_nlg"]
             return True
 
         pending = dialog_context.get("pending_interpretation")
@@ -171,9 +209,28 @@ def process_user_turn(
         dialog_context["response"]["system_move_nlg"] = generate_error_utterance(
             "no_interpretation"
         )
+        dialog_context["last_system_move_nlg"] = dialog_context["response"]["system_move_nlg"]
         return True
 
     interpretation = parse_utterance(utterance)
+    if interpretation is not None and interpretation["intent"] == "repeat":
+        last_nlg = dialog_context.get("last_system_move_nlg")
+        if last_nlg:
+            dialog_context["response"] = {
+                "type": "info",
+                "system_move_nlg": last_nlg,
+            }
+            dialog_context["last_system_move_nlg"] = dialog_context["response"]["system_move_nlg"]
+            return True
+        dialog_context["response"] = {
+            "type": "error",
+            "reason": "no_interpretation",
+        }
+        dialog_context["response"]["system_move_nlg"] = generate_error_utterance(
+            "no_interpretation"
+        )
+        dialog_context["last_system_move_nlg"] = dialog_context["response"]["system_move_nlg"]
+        return True
 
     if interpretation is not None and interpretation["intent"] == "affirm":
         pending = dialog_context.get("pending_interpretation")
@@ -185,6 +242,7 @@ def process_user_turn(
             dialog_context["response"]["system_move_nlg"] = generate_error_utterance(
                 "no_interpretation"
             )
+            dialog_context["last_system_move_nlg"] = dialog_context["response"]["system_move_nlg"]
             return True
         if not dialog_context.get("keep_system_turn"):
             dialog_context["keep_system_turn"] = True
@@ -192,6 +250,7 @@ def process_user_turn(
                 "type": "thinking",
                 "system_move_nlg": THINKING_UTTERANCE,
             }
+            dialog_context["last_system_move_nlg"] = dialog_context["response"]["system_move_nlg"]
             return True
         dialog_context.pop("pending_interpretation", None)
         return _execute_and_respond(pending, board, dialog_context, move_selector)
@@ -202,6 +261,18 @@ def process_user_turn(
             "type": "info",
             "system_move_nlg": generate_rejection_ack(),
         }
+        dialog_context["last_system_move_nlg"] = dialog_context["response"]["system_move_nlg"]
+        return True
+
+    if interpretation is not None and interpretation["intent"] == "start_game":
+        board.reset()
+        dialog_context.clear()
+        dialog_context["awaiting_color"] = True
+        dialog_context["response"] = {
+            "type": "color_choice",
+            "system_move_nlg": COLOR_CHOICE_PROMPT,
+        }
+        dialog_context["last_system_move_nlg"] = dialog_context["response"]["system_move_nlg"]
         return True
 
     if interpretation is not None and interpretation["intent"] in (
@@ -210,14 +281,16 @@ def process_user_turn(
     ):
         user_move = resolve_move(board, interpretation)
         if user_move is None or not board.is_legal(user_move):
+            reason = _resolve_error_reason(board, interpretation, user_move)
             dialog_context["response"] = {
                 "type": "error",
-                "reason": "invalid_or_ambiguous_user_move",
+                "reason": reason,
                 "interpretation": interpretation,
             }
             dialog_context["response"]["system_move_nlg"] = generate_error_utterance(
-                "invalid_or_ambiguous_user_move"
+                reason
             )
+            dialog_context["last_system_move_nlg"] = dialog_context["response"]["system_move_nlg"]
             return True
 
         dialog_context["pending_interpretation"] = interpretation
@@ -228,6 +301,7 @@ def process_user_turn(
                 board, interpretation, user_move
             ),
         }
+        dialog_context["last_system_move_nlg"] = dialog_context["response"]["system_move_nlg"]
         return True
 
     dialog_context["response"] = {
@@ -237,4 +311,5 @@ def process_user_turn(
     dialog_context["response"]["system_move_nlg"] = generate_error_utterance(
         "no_interpretation"
     )
+    dialog_context["last_system_move_nlg"] = dialog_context["response"]["system_move_nlg"]
     return True

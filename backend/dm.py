@@ -44,9 +44,19 @@ def handle_turn(
 
     user_move = resolve_move(board, interpretation)
     if user_move is None or not board.is_legal(user_move):
+        reason = "invalid_user_move"
+        if user_move is None:
+            args = interpretation.get("arguments", {})
+            to_sq_str = args.get("to")
+            from_sq_str = args.get("from")
+            if to_sq_str and not from_sq_str:
+                to_sq = chess.parse_square(to_sq_str)
+                matches = sum(1 for m in board.legal_moves if m.to_square == to_sq)
+                if matches > 1:
+                    reason = "ambiguous_user_move"
         dialog_context["response"] = {
             "type": "error",
-            "reason": "invalid_or_ambiguous_user_move",
+            "reason": reason,
             "interpretation": interpretation,
         }
         return False

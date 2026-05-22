@@ -15,7 +15,7 @@ from dialog import process_user_turn
 
 def main() -> None:
     board = chess.Board()
-    context: dict = {"user_color": "white"}
+    context: dict = {"user_color": "white", "game_started": True}
 
     print()
     print("=== Svenska schack (textläge) ===")
