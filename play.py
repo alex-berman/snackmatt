@@ -46,7 +46,7 @@ def main() -> None:
         if system_text:
             print(f"\nSystem: {system_text}")
 
-        if context.get("thinking_said"):
+        if context.get("keep_system_turn"):
             process_user_turn("", board, context)
             response = context.get("response", {})
             system_text = response.get("system_move_nlg", "")

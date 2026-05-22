@@ -73,8 +73,8 @@ def process_user_turn(
 
     if not utterance:
         pending = dialog_context.get("pending_interpretation")
-        if pending and dialog_context.get("thinking_said"):
-            dialog_context.pop("thinking_said", None)
+        if pending and dialog_context.get("keep_system_turn"):
+            dialog_context.pop("keep_system_turn", None)
             dialog_context.pop("pending_interpretation", None)
             return _execute_and_respond(pending, board, dialog_context, move_selector)
         dialog_context["response"] = {
@@ -99,8 +99,8 @@ def process_user_turn(
                 "no_interpretation"
             )
             return True
-        if not dialog_context.get("thinking_said"):
-            dialog_context["thinking_said"] = True
+        if not dialog_context.get("keep_system_turn"):
+            dialog_context["keep_system_turn"] = True
             dialog_context["response"] = {
                 "type": "thinking",
                 "system_move_nlg": THINKING_UTTERANCE,
