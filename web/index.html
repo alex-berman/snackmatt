@@ -6,27 +6,14 @@
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
     />
-    <title>Rösttest — Schack</title>
+    <title>Snackmatt — Schack</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main>
-      <h1>Rösttest</h1>
-      <p class="lead">Prata i mikrofonen. Appen svarar med röst.</p>
-
-      <p id="status" class="status" aria-live="polite">Redo</p>
-      <p id="transcript" class="transcript" hidden></p>
-
-      <div class="actions">
-        <button type="button" id="recordBtn" class="btn primary">
-          Håll för att prata
-        </button>
-        <button type="button" id="ttsBtn" class="btn secondary">
-          Testa röst (TTS)
-        </button>
-      </div>
-    </main>
-    <audio id="player" controls hidden></audio>
+    <button type="button" id="recordBtn" class="btn primary" disabled>
+      Håll för att prata
+    </button>
+    <audio id="player" preload="auto"></audio>
     <script src="app.js"></script>
   </body>
 </html>
